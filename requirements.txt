@@ -1,0 +1,9 @@
+Django==6.0
+gunicorn
+psycopg2-binary
+Pillow
+ReportLab
+django-crispy-forms
+crispy-bootstrap5
+whitenoise
+python-dotenv
