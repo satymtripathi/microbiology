@@ -1,0 +1,33 @@
+<div class="modal fade" id="caseHistoryModal-{{ request_obj.id }}" tabindex="-1" aria-labelledby="caseHistoryLabel-{{ request_obj.id }}" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="caseHistoryLabel-{{ request_obj.id }}">Case History — {{ request_obj.patient_id }}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        {% if history_list %}
+          <ul class="list-group">
+            {% for h in history_list %}
+              <li class="list-group-item">
+                <div class="d-flex justify-content-between">
+                  <div>
+                    <strong>{{ h.action }}</strong>
+                    {% if h.user %} by <em>{{ h.user.full_name }}</em>{% endif %}
+                    <div class="small text-muted">{{ h.timestamp|date:"M d, Y H:i" }}</div>
+                    {% if h.note %}<div class="mt-2">{{ h.note }}</div>{% endif %}
+                  </div>
+                </div>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <div class="alert alert-secondary">No history entries available for this case.</div>
+        {% endif %}
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>

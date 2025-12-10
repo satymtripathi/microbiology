@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}My Reports{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-2">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="text-primary mb-1"><i class="fa-solid fa-folder-open me-2"></i>My Sample Requests</h2>
+            <p class="text-muted small">Track all submitted samples and their lab results</p>
+        </div>
+        <a href="{% url 'doctor_submit' %}" class="btn btn-primary btn-lg">
+            <i class="fa-solid fa-plus-circle me-2"></i> New Sample Request
+        </a>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    {% endif %}
+
+    {% if requests %}
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+            {% for request in requests %}
+            <div class="col">
+                <div class="card h-100 shadow-sm border-0 overflow-hidden" 
+                     style="border-left: 5px solid {% if request.status == 'Completed' %}#198754{% elif request.status == 'Pending' %}#ffc107{% endif %};">
+
+                    <div class="card-header bg-gradient p-3" style="background: linear-gradient(135deg, {% if request.status == 'Completed' %}#198754{% elif request.status == 'Pending' %}#ffc107{% endif %} 0%, {% if request.status == 'Completed' %}#157347{% elif request.status == 'Pending' %}#e0a800{% endif %} 100%); color: white;">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                {% if request.status == 'Completed' %}<i class="fa-solid fa-check-circle me-2"></i>{% else %}<i class="fa-solid fa-hourglass-end me-2"></i>{% endif %}
+                                {{ request.patient_id }}
+                            </h5>
+                            <span class="badge bg-white text-dark">{{ request.centre_name|truncatechars:20 }}</span>
+                        </div>
+                    </div>
+
+                    <div class="card-body p-3">
+                        <div class="mb-3">
+                            <small class="text-muted">
+                                <i class="fa-solid fa-calendar me-1"></i>{{ request.timestamp|date:"M d, Y H:i" }}
+                            </small>
+                            <br>
+                            <small class="text-muted">
+                                <i class="fa-solid fa-eye me-1"></i><strong>Eye:</strong> {{ request.get_eye_display }}
+                            </small>
+                            <br>
+                            <small class="text-muted">
+                                <i class="fa-solid fa-flask-vial me-1"></i><strong>Sample:</strong> {{ request.get_sample_display }}
+                            </small>
+                            <br>
+                            <small class="text-muted">
+                                <i class="fa-solid fa-hourglass-end me-1"></i><strong>Duration:</strong> {{ request.duration_value }} {{ request.get_duration_unit_display }}
+                            </small>
+                            {% if request.on_meds %}
+                            <br>
+                            <small class="text-muted">
+                                <i class="fa-solid fa-prescription-bottle me-1"></i><strong>Medications:</strong> 
+                                {% if request.meds_category == 'Others' %}
+                                    {{ request.meds_custom }}
+                                {% else %}
+                                    {{ request.get_meds_category_display }}
+                                {% endif %}
+                            </small>
+                            {% endif %}
+                        </div>
+
+                        <div class="alert alert-light p-2 mb-3 small border-start border-3" style="border-color: {% if request.status == 'Completed' %}#198754{% else %}#ffc107{% endif %}!important;">
+                            <strong>Status:</strong>
+                            <span class="badge {% if request.status == 'Completed' %}bg-success{% else %}bg-warning text-dark{% endif %}" style="font-size: 0.85rem;">
+                                {{ request.status }}
+                            </span>
+                        </div>
+
+                        {% if request.report_data %}
+                        <div class="alert alert-success p-2 small rounded mb-3">
+                            <i class="fa-solid fa-check me-1"></i><strong>Report:</strong>
+                            <div class="mt-2">{{ request.report_data.report_text|truncatechars:120 }}</div>
+                            <em class="text-muted d-block mt-1">Authorized: {{ request.report_data.auth_by }}</em>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <a href="{% url 'generate_report_pdf' request.pk %}" class="btn btn-success btn-sm">
+                                <i class="fa-solid fa-download me-1"></i> Download PDF Report
+                            </a>
+                        </div>
+
+                        {% else %}
+                        <div class="alert alert-warning p-2 small rounded mb-3">
+                            <i class="fa-solid fa-spinner me-1"></i><strong>Awaiting Lab Authorization</strong>
+                            <div class="mt-2 text-dark"><strong>Impression:</strong> {{ request.impression|truncatechars:80 }}</div>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="card-footer bg-light p-2 text-center">
+                        <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#caseHistoryModal-{{ request.id }}">
+                            <i class="fa-solid fa-history me-1"></i> Case History
+                        </button>
+                    </div>
+                </div>
+
+                {% include "core/partials/case_history.html" with request_obj=request history_list=request.history_list %}
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-info mt-4 rounded shadow-sm p-4 text-center">
+            <i class="fa-solid fa-inbox text-info" style="font-size: 3rem;"></i>
+            <h5 class="mt-3">No Samples Submitted Yet</h5>
+            <p class="text-muted">Use the "New Sample Request" button to begin submitting samples for analysis.</p>
+        </div>
+    {% endif %}
+</div>
+
+<style>
+.card { transition: all 0.3s ease; }
+.card:hover { transform: translateY(-5px); box-shadow: 0 12px 24px rgba(18,38,63,0.12)!important; }
+</style>
+{% endblock %}

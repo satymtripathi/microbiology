@@ -1,0 +1,282 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Clear - Login</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        .login-container {
+            width: 100%;
+            max-width: 420px;
+        }
+        
+        .login-card {
+            border: none;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+        
+        .login-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2.5rem 1.5rem;
+            text-align: center;
+        }
+        
+        .login-header h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+        }
+        
+        .login-header p {
+            font-size: 0.95rem;
+            opacity: 0.95;
+            margin-bottom: 0;
+        }
+        
+        .login-body {
+            padding: 2.5rem 1.5rem;
+        }
+        
+        .form-label {
+            font-weight: 600;
+            font-size: 0.95rem;
+            margin-bottom: 0.75rem;
+            color: #333;
+        }
+        
+        .form-control, .form-select {
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            height: 50px;
+            font-size: 1rem;
+            transition: all 0.3s;
+            padding: 0.75rem 1rem;
+        }
+        
+        .form-control:focus, .form-select:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.15);
+        }
+        
+        .form-select {
+            padding: 0.75rem;
+        }
+        
+        .form-select option {
+            padding: 0.5rem;
+        }
+        
+        .input-group-text {
+            background-color: transparent;
+            border-right: none;
+        }
+        
+        .input-group .form-control {
+            border-left: none;
+        }
+        
+        #id_pin {
+            letter-spacing: 0.5em;
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        .btn-login {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 8px;
+            height: 50px;
+            font-weight: 600;
+            font-size: 1rem;
+            margin-top: 1.5rem;
+            transition: all 0.3s;
+        }
+        
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn-login:active {
+            transform: translateY(0);
+        }
+        
+        .alert {
+            border: none;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            border-left: 4px solid;
+        }
+        
+        .alert-danger {
+            border-left-color: #dc3545;
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        
+        .alert-info {
+            border-left-color: #0dcaf0;
+            background-color: #cfe2ff;
+            color: #084298;
+        }
+        
+        .login-footer {
+            padding: 1.5rem;
+            background-color: #f8f9fa;
+            text-align: center;
+            font-size: 0.85rem;
+            color: #6c757d;
+            border-top: 1px solid #e0e0e0;
+        }
+        
+        .logo-icon {
+            font-size: 2.5rem;
+        }
+        
+        .role-badge {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            background-color: rgba(255,255,255,0.2);
+            border-radius: 4px;
+            margin-left: 0.5rem;
+        }
+        
+        .error-field {
+            border-color: #dc3545 !important;
+        }
+        
+        .error-message {
+            font-size: 0.85rem;
+            color: #dc3545;
+            margin-top: 0.25rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-card">
+            <!-- Header -->
+            <div class="login-header">
+                <h1>
+                    <i class="fa-solid fa-flask logo-icon"></i>
+                    <span>Project Clear</span>
+                </h1>
+                <p><i class="fa-solid fa-microscope me-1"></i>Ocular Microbiology Reading Centre</p>
+            </div>
+
+            <!-- Body -->
+            <div class="login-body">
+                {% if messages %}
+                    {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }}" role="alert">
+                        <i class="fa-solid fa-{% if message.tags == 'danger' %}exclamation-circle{% else %}info-circle{% endif %} me-2"></i>
+                        {{ message }}
+                    </div>
+                    {% endfor %}
+                {% endif %}
+
+                <form method="post" id="loginForm">
+                    {% csrf_token %}
+
+                    <!-- Username Dropdown -->
+                    <div class="form-group">
+                        <label for="id_username" class="form-label">
+                            <i class="fa-solid fa-user me-2"></i>Select User
+                        </label>
+                        <select name="username" id="id_username" class="form-select {% if form.username.errors %}error-field{% endif %}" required>
+                            <option value="">-- Choose your account --</option>
+                            {% for value, label in form.username.field.choices %}
+                                {% if value %}
+                                    <option value="{{ value }}" {% if form.username.value == value %}selected{% endif %}>{{ label }}</option>
+                                {% endif %}
+                            {% endfor %}
+                        </select>
+                        {% if form.username.errors %}
+                            <div class="error-message">{{ form.username.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- PIN Input -->
+                    <div class="form-group">
+                        <label for="id_pin" class="form-label">
+                            <i class="fa-solid fa-lock me-2"></i>4-Digit PIN
+                        </label>
+                        <input 
+                            type="password" 
+                            name="pin" 
+                            id="id_pin" 
+                            class="form-control {% if form.pin.errors %}error-field{% endif %}" 
+                            placeholder="••••" 
+                            inputmode="numeric" 
+                            maxlength="4"
+                            required
+                        >
+                        {% if form.pin.errors %}
+                            <div class="error-message">{{ form.pin.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit" class="btn btn-login btn-primary w-100">
+                        <i class="fa-solid fa-right-to-bracket me-2"></i>Login
+                    </button>
+                </form>
+
+                <!-- Info Box -->
+                <div class="alert alert-info mt-3 mb-0" role="alert">
+                    <i class="fa-solid fa-circle-info me-2"></i>
+                    <strong>Demo Credentials:</strong><br>
+                    <small>Doctor: pin <code>0000</code> | Lab: pin <code>0000</code></small>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="login-footer">
+                <i class="fa-solid fa-shield-check me-1"></i>
+                Secure Portal • Powered by Microbiology Lab
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Auto-focus PIN field when username is selected
+        document.getElementById('id_username').addEventListener('change', function() {
+            if (this.value) {
+                document.getElementById('id_pin').focus();
+            }
+        });
+        
+        // Enforce numeric-only input for PIN
+        document.getElementById('id_pin').addEventListener('keypress', function(e) {
+            if (!/[0-9]/.test(e.key)) {
+                e.preventDefault();
+            }
+        });
+    </script>
+</body>
+</html>

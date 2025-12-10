@@ -1,0 +1,18 @@
+<div class="d-flex align-items-start">
+    <div class="nav flex-column nav-pills me-3" id="v-pills-tab" role="tablist" aria-orientation="vertical" style="min-width: 200px;">
+        <h5 class="mt-3 text-primary">Doctor Menu</h5>
+        <a class="nav-link {% if request.resolver_match.url_name == 'doctor_submit' %}active{% endif %}" 
+           id="v-pills-submit-tab" href="{% url 'doctor_submit' %}">
+            <i class="fas fa-plus-circle"></i> New Request
+        </a>
+        <a class="nav-link {% if request.resolver_match.url_name == 'doctor_reports' %}active{% endif %}" 
+           id="v-pills-reports-tab" href="{% url 'doctor_reports' %}">
+            <i class="fas fa-folder-open"></i> 📂 My Reports
+        </a>
+    </div>
+    <div class="tab-content flex-grow-1" id="v-pills-tabContent">
+        <div class="card p-4 shadow-sm">
+            {% block doctor_content %}{% endblock %}
+        </div>
+    </div>
+</div>

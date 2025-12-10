@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Lab Reports{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-2">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h4 class="text-primary mb-1">Completed Reports</h4>
+            <p class="text-muted small mb-0">All reports completed in the system</p>
+        </div>
+        <div class="text-muted small">Total: <strong>{{ total_reports|default:0 }}</strong></div>
+    </div>
+
+    {% if reports %}
+    <div class="row row-cols-1 row-cols-md-2 g-3">
+        {% for req in reports %}
+        <div class="col">
+            <div class="card h-100">
+                <div class="card-header bg-light">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div><strong>#{{ req.id }}</strong> - {{ req.patient_id }}</div>
+                        <div class="small text-muted">{{ req.timestamp|date:"M d, Y" }}</div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="mb-2 small text-muted">Centre: {{ req.centre_name }}</div>
+                    <div class="mb-2 small"><strong>Sample:</strong> {{ req.get_sample_display }} • <strong>Eye:</strong> {{ req.get_eye_display }}</div>
+                    {% if req.report_data %}
+                    <div class="mb-2 small text-success"><strong>Auth:</strong> {{ req.report_data.auth_by }}</div>
+                    <a href="{% url 'generate_report_pdf' req.pk %}" class="btn btn-sm btn-outline-success">Download PDF</a>
+                    {% else %}
+                    <span class="badge bg-warning text-dark">No report available</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-info">No completed reports yet.</div>
+    {% endif %}
+</div>
+{% endblock %}

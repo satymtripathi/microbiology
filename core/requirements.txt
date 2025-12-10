@@ -1,0 +1,10 @@
+Django==6.0
+psycopg2-binary
+Pillow
+ReportLab
+django-crispy-forms
+crispy-bootstrap5
+gunicorn
+whitenoise
+python-dotenv
+dj-database-url
