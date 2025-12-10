@@ -27,9 +27,6 @@ SECRET_KEY = "django-insecure-!r4^(zkedjm7gdir_)vd*-h-z^+pl3wva7o5%5_gfvbbdn0!yk
 DEBUG = True
 
 ALLOWED_HOSTS = [
-    "microbiology-n9tr.onrender.com",
-    "localhost",
-    "127.0.0.1",
 ]
 
 
