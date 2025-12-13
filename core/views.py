@@ -132,11 +132,21 @@ def doctor_submit_view(request):
 
     return render(request, 'core/doctor_submit.html', {
         'form': form,
-        'page_title': 'New Sample Submission',
+        'page_title': f'Welcome, {request.user.full_name}',
         'total_cases': total_cases,
         'pending_cases': pending_cases,
     })
 
+
+# ==========================================
+# DOCTOR: REPORT LIST
+# ==========================================
+# ==========================================
+# DOCTOR: REPORT LIST
+# ==========================================
+from django.db.models import Q
+
+# ... (existing imports)
 
 # ==========================================
 # DOCTOR: REPORT LIST
@@ -147,7 +157,17 @@ class DoctorReportListView(DoctorRequiredMixin, ListView):
     context_object_name = 'requests'
 
     def get_queryset(self):
-        return Request.objects.filter(doctor=self.request.user).order_by('-timestamp')
+        qs = Request.objects.filter(doctor=self.request.user).order_by('-timestamp')
+        
+        # Search Filter
+        query = self.request.GET.get('q')
+        if query:
+            qs = qs.filter(
+                Q(patient_id__icontains=query) | 
+                Q(centre_name__icontains=query) |
+                Q(status__icontains=query)
+            )
+        return qs
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
@@ -158,6 +178,10 @@ class DoctorReportListView(DoctorRequiredMixin, ListView):
                 r.report_data = None
             # Attach history entries (latest first) - don't assign to related set
             r.history_list = list(r.history_entries.all()[:20])
+            
+            # Find completion date from history
+            completion_event = next((h for h in r.history_list if h.action == 'Report Completed'), None)
+            r.completion_date = completion_event.timestamp if completion_event else None
         return ctx
 
 
@@ -171,10 +195,20 @@ class LabQueueListView(LabRequiredMixin, ListView):
 
     def get_queryset(self):
         # Show ONLY cases assigned to THIS lab tech
-        return Request.objects.filter(
+        qs = Request.objects.filter(
             status='Pending',
             assigned_to=self.request.user
         ).order_by('timestamp')
+        
+        # Search Filter
+        query = self.request.GET.get('q')
+        if query:
+            qs = qs.filter(
+                Q(patient_id__icontains=query) | 
+                Q(centre_name__icontains=query) |
+                Q(doctor__full_name__icontains=query)
+            )
+        return qs
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
@@ -194,10 +228,19 @@ class LabReportListView(LabRequiredMixin, ListView):
 
     def get_queryset(self):
         # Show ONLY completed cases assigned to THIS lab tech
-        return Request.objects.filter(
+        qs = Request.objects.filter(
             status='Completed',
             assigned_to=self.request.user
         ).order_by('-timestamp')
+        
+        # Search Filter
+        query = self.request.GET.get('q')
+        if query:
+            qs = qs.filter(
+                Q(patient_id__icontains=query) | 
+                Q(centre_name__icontains=query)
+            )
+        return qs
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
@@ -322,7 +365,7 @@ def logout_view(request):
 @login_required
 @user_passes_test(lambda user: user.is_doctor() or user.is_lab(), login_url='login')
 def generate_report_pdf(request, pk):
-    """Generates a PDF report using a structured table layout."""
+    """Generates a professional PDF report with official layout."""
     
     request_obj = get_object_or_404(Request, pk=pk)
     try:
@@ -341,27 +384,44 @@ def generate_report_pdf(request, pk):
     buffer = BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=letter, 
                             leftMargin=0.5*inch, rightMargin=0.5*inch, 
-                            topMargin=0.75*inch, bottomMargin=0.75*inch)
+                            topMargin=0.5*inch, bottomMargin=0.5*inch)
     
     styles = getSampleStyleSheet()
     story = []
     
-    def bold(text, style=styles['Normal']):
-        return Paragraph(f"<b>{text}</b>", style)
-
-    # --- 1. Title ---
-    title_style = styles['Title'].clone('CustomTitle')
-    title_style.alignment = 1
-    title_style.fontSize = 16
-    story.append(Paragraph("Ocular Microbiology Laboratory Report", title_style))
-    story.append(Spacer(1, 0.25 * inch))
-
-    # Define Column Widths for main tables
-    col_widths_clinical = [1.3*inch, 2.2*inch, 1.3*inch, 1.7*inch]
+    # Define official fonts and styles
+    # Title
+    title_style = styles['Heading1'].clone('OfficialTitle')
+    title_style.fontName = 'Helvetica-Bold'
+    title_style.fontSize = 18
+    title_style.textColor = colors.HexColor('#003366')
+    title_style.alignment = 1  # CENTER
+    title_style.spaceAfter = 20
     
-    # --- 2. Patient & Clinical Details Table ---
+    # Section Header
+    section_header_style = styles['Heading2'].clone('SectionHeader')
+    section_header_style.fontName = 'Helvetica-Bold'
+    section_header_style.fontSize = 12
+    section_header_style.textColor = colors.white
+    section_header_style.backColor = colors.HexColor('#003366')
+    section_header_style.padding = 6
+    section_header_style.borderPadding = 6
+    section_header_style.spaceBefore = 12
+    section_header_style.spaceAfter = 10
     
-    # Format medications properly
+    # Normal Text
+    normal_style = styles['Normal']
+    normal_style.fontSize = 10
+    normal_style.leading = 14
+
+    # --- 1. Report Title ---
+    story.append(Paragraph("OCULAR MICROBIOLOGY LABORATORY REPORT", title_style))
+    story.append(Spacer(1, 0.2 * inch))
+
+    # --- 2. TABLE 1: Patient & Clinical Details ---
+    story.append(Paragraph("PATIENT & CLINICAL DETAILS", section_header_style))
+    
+    # Format medications
     meds_display = ""
     if request_obj.on_meds:
         if request_obj.meds_category == 'Others':
@@ -371,105 +431,130 @@ def generate_report_pdf(request, pk):
     else:
         meds_display = "No medications"
 
-    # Format duration
     duration_display = f"{request_obj.duration_value} {request_obj.get_duration_unit_display()}"
 
-    clinical_data_flat = [
-        [bold("Patient & Clinical Details"), "", "", ""],
-        [bold("Patient ID:"), request_obj.patient_id, bold("Centre:"), request_obj.centre_name],
-        [bold("Eye:"), request_obj.get_eye_display(), bold("Date Submitted:"), request_obj.timestamp.strftime('%Y-%m-%d %H:%M')],
-        [bold("Sample:"), request_obj.get_sample_display(), bold("Duration:"), duration_display],
-        [bold("Medications:"), meds_display, bold("Stain Used:"), request_obj.stain],
-        [bold("Clinical Impression:"), request_obj.get_impression_display(), "", ""], 
+    # Data for Clinical Table
+    clinical_data = [
+        [Paragraph("<b>Patient ID:</b>", normal_style), Paragraph(request_obj.patient_id, normal_style),
+         Paragraph("<b>Centre:</b>", normal_style), Paragraph(request_obj.centre_name, normal_style)],
+        
+        [Paragraph("<b>Eye:</b>", normal_style), Paragraph(request_obj.get_eye_display(), normal_style),
+         Paragraph("<b>Date Submitted:</b>", normal_style), Paragraph(request_obj.timestamp.strftime('%Y-%m-%d'), normal_style)],
+        
+        [Paragraph("<b>Sample:</b>", normal_style), Paragraph(request_obj.get_sample_display(), normal_style),
+         Paragraph("<b>Duration:</b>", normal_style), Paragraph(duration_display, normal_style)],
+        
+        [Paragraph("<b>Medications:</b>", normal_style), Paragraph(meds_display, normal_style),
+         Paragraph("<b>Stain Used:</b>", normal_style), Paragraph(request_obj.stain or "N/A", normal_style)],
+        
+        [Paragraph("<b>Clinical Impression:</b>", normal_style), Paragraph(request_obj.get_impression_display(), normal_style),
+         "", ""]
     ]
 
-    clinical_table = Table(clinical_data_flat, colWidths=col_widths_clinical)
-    
-    clinical_table.setStyle(TableStyle([
-        ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
-        ('SPAN', (0, 0), (3, 0)), 
-        ('FONTNAME', (0, 0), (3, 0), 'Helvetica-Bold'),
-        ('BACKGROUND', (0, 0), (3, 0), colors.lightgrey),
+    # Table Style
+    table_style = TableStyle([
+        ('BACKGROUND', (0, 0), (-1, -1), colors.white),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#dddddd')),
         ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-        ('FONTSIZE', (0, 0), (-1, -1), 9),
-    ]))
+        ('PADDING', (0, 0), (-1, -1), 8),
+        ('BACKGROUND', (0, 0), (0, -1), colors.HexColor('#f8f9fa')), # Light gray for labels col 1
+        ('BACKGROUND', (2, 0), (2, -1), colors.HexColor('#f8f9fa')), # Light gray for labels col 3
+        ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+    ])
+
+    col_widths = [1.2*inch, 2.3*inch, 1.2*inch, 2.3*inch]
+    clinical_table = Table(clinical_data, colWidths=col_widths)
+    clinical_table.setStyle(table_style)
     
     story.append(clinical_table)
-    story.append(Spacer(1, 0.25 * inch))
+    story.append(Spacer(1, 0.2 * inch))
 
-    # --- 3. Laboratory Interpretation Table ---
+    # --- 3. TABLE 2: Laboratory Interpretation ---
+    story.append(Paragraph("LABORATORY INTERPRETATION", section_header_style))
     
     report_quality = report_obj.quality if report_obj.quality else "N/A"
-    report_suitability = "Yes" if report_obj.sample_suitability else "No (Specify reason below)"
+    report_suitability = "Yes" if report_obj.sample_suitability else "No"
     reason_display = report_obj.suitability_reason if not report_obj.sample_suitability and report_obj.suitability_reason else "N/A"
 
-    lab_data_flat = [
-        [bold("Laboratory Interpretation"), "", "", ""],
-        [bold("Lab ID:"), report_obj.lab_id, bold("RC Code:"), report_obj.rc_code],
-        [bold("Sample Suitability:"), report_suitability, bold("Quality:"), report_quality],
-        [bold("Suitability Reason:"), reason_display, "", ""],
+    lab_data = [
+        [Paragraph("<b>Lab ID:</b>", normal_style), Paragraph(report_obj.lab_id, normal_style),
+         Paragraph("<b>RC Code:</b>", normal_style), Paragraph(report_obj.rc_code, normal_style)],
+        
+        [Paragraph("<b>Sample Quality:</b>", normal_style), Paragraph(report_quality, normal_style),
+         Paragraph("<b>Suitability:</b>", normal_style), Paragraph(report_suitability, normal_style)],
+        
+        [Paragraph("<b>Suitability Reason:</b>", normal_style), Paragraph(reason_display, normal_style),
+         "", ""]
     ]
     
-    lab_table = Table(lab_data_flat, colWidths=col_widths_clinical)
-    
-    lab_table.setStyle(TableStyle([
-        ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
-        ('SPAN', (0, 0), (3, 0)),
-        ('FONTNAME', (0, 0), (3, 0), 'Helvetica-Bold'),
-        ('BACKGROUND', (0, 0), (3, 0), colors.lightgrey),
-        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-        ('FONTSIZE', (0, 0), (-1, -1), 9),
-    ]))
+    lab_table = Table(lab_data, colWidths=col_widths)
+    lab_table.setStyle(table_style)
     
     story.append(lab_table)
-    story.append(Spacer(1, 0.25 * inch))
+    story.append(Spacer(1, 0.2 * inch))
 
-    # --- 4. Report Text and Comments Table ---
-    report_data = [
-        [bold("Microbiology Report:"), Paragraph(report_obj.report_text.replace('\n', '<br/>'), styles['BodyText'])],
-        [bold("Additional Comments:"), Paragraph(report_obj.comments.replace('\n', '<br/>') if report_obj.comments else "None", styles['BodyText'])],
+    # --- 4. Microbiology Report Section ---
+    story.append(Paragraph("MICROBIOLOGY REPORT", section_header_style))
+    
+    # Use a box for the report text
+    report_content = [
+        [Paragraph(report_obj.report_text.replace('\n', '<br/>'), normal_style)]
     ]
     
-    report_table = Table(report_data, colWidths=[1.5*inch, 4.5*inch])
-    
+    report_table = Table(report_content, colWidths=[7*inch])
     report_table.setStyle(TableStyle([
-        ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
-        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-        ('PADDING', (0, 0), (-1, 0), 6), 
-        ('PADDING', (0, 1), (-1, 1), 6),
-        ('FONTSIZE', (0, 0), (-1, -1), 9),
+        ('BOX', (0, 0), (-1, -1), 1, colors.HexColor('#003366')),
+        ('PADDING', (0, 0), (-1, -1), 10),
+        ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#fcfcfc')),
     ]))
-
     story.append(report_table)
-    story.append(Spacer(1, 0.25 * inch))
+    story.append(Spacer(1, 0.1 * inch))
 
-    # --- 5. Clinical Image Section ---
+    if report_obj.comments:
+        story.append(Paragraph("<b>Additional Comments:</b>", styles['Heading4']))
+        story.append(Paragraph(report_obj.comments.replace('\n', '<br/>'), normal_style))
+        story.append(Spacer(1, 0.1 * inch))
+
+    # --- 5. Microscopy Image ---
     if request_obj.image and os.path.exists(request_obj.image.path):
+        story.append(Spacer(1, 0.1 * inch))
+        story.append(Paragraph("MICROSCOPY IMAGE", section_header_style))
         try:
-            story.append(bold("Clinical Image:"))
-            story.append(Spacer(1, 0.1 * inch))
-            img = Image(request_obj.image.path, width=5*inch, height=5*inch, kind='proportional')
+            img = Image(request_obj.image.path, width=4*inch, height=3*inch, kind='proportional')
             story.append(img)
-            story.append(Spacer(1, 0.25 * inch))
-        except Exception as e:
-            story.append(Paragraph(f"<i>Note: Image could not be loaded ({str(e)})</i>", styles['Normal']))
-            story.append(Spacer(1, 0.25 * inch))
-    
-    # --- 6. Authorization and Disclaimer ---
-    story.append(Paragraph(f"<para alignment='right'><b>Authorized By:</b> {report_obj.auth_by}</para>", styles['Normal']))
-    story.append(Spacer(1, 0.5 * inch))
+        except Exception:
+            story.append(Paragraph("<i>[Image could not be loaded]</i>", normal_style))
+        story.append(Spacer(1, 0.2 * inch))
 
+    # --- 6. Footer & Signature ---
+    story.append(Spacer(1, 0.3 * inch))
+    
+    # Signature Block
+    sig_data = [
+        ["", Paragraph(f"<b>Authorized By:</b> {report_obj.auth_by}", normal_style)],
+        ["", Paragraph(f"<b>Date:</b> {timezone.now().strftime('%Y-%m-%d %H:%M')}", normal_style)],
+        ["", Paragraph("__________________________________", normal_style)],
+        ["", Paragraph("Signature", styles['Normal'])]
+    ]
+    
+    sig_table = Table(sig_data, colWidths=[4*inch, 3*inch])
+    sig_table.setStyle(TableStyle([
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('ALIGN', (1, 0), (1, -1), 'CENTER'),
+    ]))
+    story.append(sig_table)
+    
     # Disclaimer
+    story.append(Spacer(1, 0.3 * inch))
     disclaimer_style = styles['Normal'].clone('Disclaimer')
     disclaimer_style.fontSize = 8
+    disclaimer_style.textColor = colors.gray
+    disclaimer_style.alignment = 1 # Center
     
     disclaimer_text = """
-    <b>DISCLAIMER:</b> This report is generated based on the images provided by the clinician and may be subject to change on review of the entire slide at the reading centre. 
-    This report acts solely as a guide to a clinician for clinical correlation. The reading centre is not responsible for any complications that may arise during the treatment of the patient.
-    <br/><br/>
-    <i>Generated electronically by Microbiology Portal - Ocular Microbiology Reading Centre</i>
+    DISCLAIMER: This report is generated based on images provided by the clinician and may be subject to change upon review of the entire slide at the reading centre. 
+    This report acts solely as a guide for clinical correlation. The reading centre is not responsible for any complications arising during patient treatment.
     """
-    
     story.append(Paragraph(disclaimer_text, disclaimer_style))
 
     # Build PDF

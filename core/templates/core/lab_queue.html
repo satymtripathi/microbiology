@@ -6,133 +6,162 @@
 {% block content %}
 <div class="container-fluid py-2">
 
-    <div class="d-flex justify-content-between align-items-center mb-3">
+    <!-- Header & Stats -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-4 gap-3">
         <div>
-            <h4 class="text-primary mb-1">Welcome, {{ request.user.full_name }}</h4>
-            <p class="text-muted small mb-0">Lab Queue — process samples efficiently</p>
+            <h2 class="text-primary fw-bold mb-1"><i class="fa-solid fa-flask-vial me-2"></i>Lab Queue</h2>
+            <p class="text-muted small mb-0">Process pending samples efficiently</p>
         </div>
-        <div class="btn-toolbar" role="toolbar">
-            <div class="btn-group me-2" role="group">
-                <button type="button" class="btn btn-outline-dark">
-                    <i class="fa-solid fa-list-check me-1"></i> Total Cases
-                    <span class="badge bg-dark ms-2">{{ total_cases|default:0 }}</span>
-                </button>
-            </div>
-            <div class="btn-group me-2" role="group">
-                <a href="{% url 'lab_queue' %}" class="btn btn-primary">
-                    <i class="fa-solid fa-hourglass me-1"></i> Pending Queue
-                    <span class="badge bg-white text-dark ms-2">{{ pending_count|default:0 }}</span>
-                </a>
-            </div>
-            <div class="btn-group" role="group">
-                <a href="{% url 'lab_reports' %}" class="btn btn-outline-secondary">
-                    <i class="fa-solid fa-folder-open me-1"></i> Reports
-                </a>
-            </div>
-            <div class="btn-group ms-2" role="group">
-                <a href="{% url 'export_lab_csv' %}" class="btn btn-outline-info">
-                    <i class="fa-solid fa-download me-1"></i> Export CSV
-                </a>
-            </div>
+        <div class="btn-group shadow-sm">
+            <a href="{% url 'lab_queue' %}" class="btn btn-primary active">
+                <i class="fa-solid fa-hourglass me-2"></i>Pending
+                <span class="badge bg-white text-primary ms-2 rounded-pill">{{ pending_count|default:0 }}</span>
+            </a>
+            <a href="{% url 'lab_reports' %}" class="btn btn-outline-secondary">
+                <i class="fa-solid fa-folder-open me-2"></i>Completed
+            </a>
+            <a href="{% url 'export_lab_csv' %}" class="btn btn-outline-info">
+                <i class="fa-solid fa-download me-2"></i>CSV
+            </a>
+        </div>
+    </div>
+
+    <!-- Search Bar -->
+    <div class="row mb-4">
+        <div class="col-md-6 mx-auto">
+            <form method="get" class="d-flex gap-2">
+                <div class="input-group shadow-sm">
+                    <span class="input-group-text bg-white border-end-0"><i
+                            class="fa-solid fa-search text-muted"></i></span>
+                    <input type="text" name="q" class="form-control border-start-0 ps-0"
+                        placeholder="Search by Patient ID, Centre, or Doctor..." value="{{ request.GET.q }}">
+                </div>
+                <button type="submit" class="btn btn-dark">Search</button>
+                {% if request.GET.q %}
+                <a href="{% url 'lab_queue' %}" class="btn btn-outline-secondary" title="Clear Search"><i
+                        class="fa-solid fa-times"></i></a>
+                {% endif %}
+            </form>
         </div>
     </div>
 
     {% if messages %}
-        {% for message in messages %}
-        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-        {% endfor %}
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
     {% endif %}
 
     {% if pending_requests %}
-        <div class="row row-cols-1 g-4">
-            {% for request in pending_requests %}
-            <div class="col">
-                <div class="card shadow-sm border-0 overflow-hidden" style="border-left: 5px solid #ffc107;">
-                    <div class="card-header bg-warning bg-gradient text-dark p-3" style="background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%)!important;">
-                        <div class="d-flex justify-content-between align-items-center">
+    <div class="row row-cols-1 g-4">
+        {% for request in pending_requests %}
+        <div class="col">
+            <div class="card shadow-sm border-0 overflow-hidden" style="border-left: 5px solid #ffc107;">
+                <div class="card-header bg-white border-bottom-0 pt-4 pb-2 px-4">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="d-flex align-items-center gap-3">
+                            <span class="badge bg-warning text-dark fs-6 py-2 px-3 shadow-sm">
+                                <i class="fa-solid fa-id-card me-2"></i>{{ request.patient_id }}
+                            </span>
                             <div>
-                                <h5 class="mb-0">
-                                    <i class="fa-solid fa-flask-vial me-2"></i>{{ request.patient_id }}
-                                </h5>
-                                <small>Request ID: #{{ request.id }} | Duration: {{ request.duration_value }} {{ request.get_duration_unit_display }}</small>
-                            </div>
-                            <div class="text-end">
-                                <div class="badge bg-dark">{{ request.get_sample_display }}</div>
-                                <div class="badge bg-dark mt-1">{{ request.get_eye_display }}</div>
+                                <small class="text-muted d-block text-uppercase fw-bold"
+                                    style="font-size: 0.7rem;">Doctor</small>
+                                <div class="fw-bold">{{ request.doctor.full_name }}</div>
                             </div>
                         </div>
-                    </div>
-
-                    <div class="card-body">
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <small class="text-muted d-block"><i class="fa-solid fa-user-doctor me-1"></i><strong>Doctor:</strong></small>
-                                <span>{{ request.doctor.full_name }}</span>
-                            </div>
-                            <div class="col-md-6 text-end">
-                                <small class="text-muted d-block"><i class="fa-solid fa-calendar me-1"></i><strong>Submitted:</strong></small>
-                                <span>{{ request.timestamp|date:"M d, Y H:i" }}</span>
-                            </div>
-                        </div>
-
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <small class="text-muted d-block"><i class="fa-solid fa-hospital me-1"></i><strong>Centre:</strong></small>
-                                <span>{{ request.centre_name }}</span>
-                            </div>
-                            <div class="col-md-6">
-                                <small class="text-muted d-block"><i class="fa-solid fa-flask me-1"></i><strong>Stain(s) Requested:</strong></small>
-                                <span>{{ request.stain|truncatechars:40 }}</span>
-                            </div>
-                        </div>
-
-                        <div class="alert alert-light p-2 border-start border-3 mb-3">
-                            <small><strong>Clinical Impression:</strong></small>
-                            <p class="mb-0 mt-1">{{ request.impression }}</p>
-                        </div>
-
-                        {% if request.on_meds %}
-                        <div class="alert alert-warning p-2 border-start border-3 mb-3">
-                            <small><strong><i class="fa-solid fa-prescription-bottle me-1"></i>Medications:</strong></small>
-                            <p class="mb-0 mt-1">
-                                {% if request.meds_category == 'Others' %}
-                                    {{ request.meds_custom }}
-                                {% else %}
-                                    {{ request.get_meds_category_display }}
-                                {% endif %}
-                            </p>
-                        </div>
-                        {% endif %}
-
-                        <div class="d-flex gap-2">
-                            <a href="{% url 'lab_process' request.pk %}" class="btn btn-primary flex-grow-1">
-                                <i class="fa-solid fa-microscope me-1"></i> Process Sample
-                            </a>
-                            <button class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#caseHistoryModal-{{ request.id }}">
-                                <i class="fa-solid fa-history me-1"></i> History
-                            </button>
+                        <div class="text-end">
+                            <small class="text-muted d-block text-uppercase fw-bold"
+                                style="font-size: 0.7rem;">Submitted</small>
+                            <div>{{ request.timestamp|date:"M d, H:i" }}</div>
                         </div>
                     </div>
                 </div>
 
-                {% include "core/partials/case_history.html" with request_obj=request history_list=request.history_list %}
+                <div class="card-body px-4 pb-4">
+                    <hr class="my-2 text-muted opacity-25">
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-3 col-6">
+                            <small class="text-muted d-block text-uppercase fw-bold mb-1"
+                                style="font-size: 0.65rem;">Centre</small>
+                            <div class="fw-bold text-truncate">{{ request.centre_name }}</div>
+                        </div>
+                        <div class="col-md-2 col-6">
+                            <small class="text-muted d-block text-uppercase fw-bold mb-1"
+                                style="font-size: 0.65rem;">Eye</small>
+                            <div class="badge bg-light text-dark border">{{ request.get_eye_display }}</div>
+                        </div>
+                        <div class="col-md-3 col-6">
+                            <small class="text-muted d-block text-uppercase fw-bold mb-1"
+                                style="font-size: 0.65rem;">Sample</small>
+                            <div class="fw-bold">{{ request.get_sample_display }}</div>
+                        </div>
+                        <div class="col-md-4 col-6">
+                            <small class="text-muted d-block text-uppercase fw-bold mb-1"
+                                style="font-size: 0.65rem;">Stains</small>
+                            <div class="text-primary fw-bold">{{ request.stain|default:"None" }}</div>
+                        </div>
+                    </div>
+
+                    <div class="bg-light p-3 rounded mb-3 border border-light">
+                        <small class="text-muted d-block text-uppercase fw-bold mb-1"
+                            style="font-size: 0.65rem;">Clinical Impression</small>
+                        <div class="text-dark">{{ request.impression }}</div>
+                    </div>
+
+                    {% if request.on_meds %}
+                    <div class="alert alert-warning p-2 small border-0 bg-warning bg-opacity-10 mb-3">
+                        <i class="fa-solid fa-pills me-2"></i>
+                        <strong>Medications:</strong>
+                        {% if request.meds_category == 'Others' %}
+                        {{ request.meds_custom }}
+                        {% else %}
+                        {{ request.get_meds_category_display }}
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                    <div class="d-flex gap-2 mt-3">
+                        <a href="{% url 'lab_process' request.pk %}"
+                            class="btn btn-primary flex-grow-1 shadow-sm fw-bold">
+                            <i class="fa-solid fa-microscope me-2"></i>Process Sample
+                        </a>
+                        <button class="btn btn-outline-secondary" data-bs-toggle="modal"
+                            data-bs-target="#caseHistoryModal-{{ request.id }}">
+                            <i class="fa-solid fa-history"></i>
+                        </button>
+                    </div>
+                </div>
             </div>
-            {% endfor %}
+
+            {% include "core/partials/case_history.html" with request_obj=request history_list=request.history_list %}
         </div>
+        {% endfor %}
+    </div>
     {% else %}
-        <div class="alert alert-success mt-4 rounded shadow-sm p-5 text-center">
-            <i class="fa-solid fa-check-circle text-success" style="font-size: 3rem;"></i>
-            <h5 class="mt-3">Queue is Empty</h5>
-            <p class="text-muted">All submitted samples have been processed. Great work!</p>
+    <div class="text-center py-5">
+        <div class="mb-3 text-success opacity-50">
+            <i class="fa-solid fa-check-circle fa-4x"></i>
         </div>
+        <h5 class="text-muted">All Caught Up!</h5>
+        <p class="text-muted small">No pending samples in the queue.</p>
+        {% if request.GET.q %}
+        <a href="{% url 'lab_queue' %}" class="btn btn-outline-secondary btn-sm mt-2">Clear Search</a>
+        {% endif %}
+    </div>
     {% endif %}
 </div>
 
 <style>
-.card { transition: all 0.3s ease; }
-.card:hover { transform: translateY(-5px); box-shadow: 0 12px 24px rgba(18,38,63,0.12)!important; }
+    .card {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.06) !important;
+    }
 </style>
 {% endblock %}

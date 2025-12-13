@@ -2,152 +2,181 @@
 {% load crispy_forms_tags %}
 {% load static %}
 
-{% block title %}Process Request{% endblock %}
+{% block title %}Process Request: {{ request_obj.patient_id }}{% endblock %}
 
 {% block content %}
-
-<div class="mb-3">
-  <h2 class="text-primary">
-    <i class="fa-solid fa-microscope me-2"></i>{{ page_title }}
-  </h2>
-  <p class="text-muted">Review doctor details, inspect microscopy image, and complete report.</p>
-</div>
-
-{% if messages %}
-  {% for m in messages %}
-  <div class="alert alert-{{ m.tags }} alert-dismissible fade show">
-    {{ m }} <button class="btn-close" data-bs-dismiss="alert"></button>
+<div class="container py-4">
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-bold text-primary mb-1">Process Lab Request</h2>
+      <p class="text-muted mb-0">Review clinical details and submit microbiology report.</p>
+    </div>
+    <div>
+      <a href="{% url 'lab_queue' %}" class="btn btn-outline-secondary">
+        <i class="fa-solid fa-arrow-left me-2"></i>Back to Queue
+      </a>
+    </div>
   </div>
-  {% endfor %}
-{% endif %}
 
-<div class="row g-3">
+  <div class="row">
+    <!-- Left Column: Patient & Clinical Summary -->
+    <div class="col-lg-4 mb-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-light border-bottom py-3">
+          <h5 class="card-title mb-0 text-dark"><i class="fa-solid fa-clipboard-user me-2"></i>Clinical Summary</h5>
+        </div>
+        <div class="card-body">
+          <div class="mb-3">
+            <label class="text-muted small text-uppercase fw-bold">Patient ID</label>
+            <div class="fs-5 fw-bold text-dark">{{ request_obj.patient_id }}</div>
+          </div>
+          <div class="mb-3">
+            <label class="text-muted small text-uppercase fw-bold">Centre</label>
+            <div>{{ request_obj.centre_name }}</div>
+          </div>
+          <div class="row mb-3">
+            <div class="col-6">
+              <label class="text-muted small text-uppercase fw-bold">Eye</label>
+              <div><span class="badge bg-info text-dark">{{ request_obj.get_eye_display }}</span></div>
+            </div>
+            <div class="col-6">
+              <label class="text-muted small text-uppercase fw-bold">Sample</label>
+              <div>{{ request_obj.get_sample_display }}</div>
+            </div>
+          </div>
 
-<!-- LEFT COLUMN -->
-<div class="col-lg-7" style="max-height:88vh;overflow-y:auto;">
+          <hr class="my-3">
 
-<div class="card shadow-sm border-0">
-<div class="card-header bg-info text-white p-2">
-<b>Request Details (Ref #{{ request_obj.id }})</b>
-</div>
-<div class="card-body small">
+          <div class="mb-3">
+            <label class="text-muted small text-uppercase fw-bold">Clinical Impression</label>
+            <div class="fw-bold text-primary">{{ request_obj.get_impression_display }}</div>
+          </div>
 
-<table class="table table-sm table-borderless mb-0">
-<tr><th>Patient ID</th><td>{{ request_obj.patient_id }}</td></tr>
-<tr><th>Centre</th><td>{{ request_obj.centre_name }}</td></tr>
-<tr><th>Sample</th><td>{{ request_obj.get_sample_display }}</td></tr>
-<tr><th>Eye</th><td>{{ request_obj.get_eye_display }}</td></tr>
-<tr><th>Duration</th><td>{{ request_obj.duration_value }} {{ request_obj.get_duration_unit_display }}</td></tr>
-<tr><th>Impression</th><td>{{ request_obj.impression }}</td></tr>
+          <div class="mb-3">
+            <label class="text-muted small text-uppercase fw-bold">Requested Stains</label>
+            <div>
+              {% if stains %}
+              {% for s in stains %}
+              <span class="badge bg-secondary me-1">{{ s }}</span>
+              {% endfor %}
+              {% else %}
+              <span class="text-muted fst-italic">None specified</span>
+              {% endif %}
+            </div>
+          </div>
 
-<tr>
-<th>Stains</th>
-<td>
-{% if stains %}
-  {% for s in stains %}
-    <span class="badge bg-primary me-1">{{ s }}</span>
-  {% endfor %}
-{% else %}
-  <span class="badge bg-secondary">N/A</span>
-{% endif %}
-</td>
-</tr>
+          <div class="mb-3">
+            <label class="text-muted small text-uppercase fw-bold">Medications</label>
+            {% if request_obj.on_meds %}
+            <div class="alert alert-warning py-2 px-3 small mb-0">
+              <i class="fa-solid fa-pills me-1"></i>
+              {% if request_obj.meds_category == 'Others' %}
+              {{ request_obj.meds_custom }}
+              {% else %}
+              {{ request_obj.get_meds_category_display }}
+              {% endif %}
+            </div>
+            {% else %}
+            <div class="text-success"><i class="fa-solid fa-check-circle me-1"></i>No prior medications</div>
+            {% endif %}
+          </div>
 
-<tr>
-<th>Medications</th>
-<td>
-{% if request_obj.on_meds %}
-  <span class="badge bg-warning text-dark">
-    {% if request_obj.meds_category == "Others" %}
-      {{ request_obj.meds_custom }}
-    {% else %}
-      {{ request_obj.get_meds_category_display }}
-    {% endif %}
-  </span>
-{% else %}
-  <span class="badge bg-secondary">None</span>
-{% endif %}
-</td>
-</tr>
+          {% if request_obj.image %}
+          <hr class="my-3">
+          <div class="mb-3">
+            <label class="text-muted small text-uppercase fw-bold mb-2">Microscopy Image</label>
+            <div class="text-center bg-light p-2 rounded">
+              <img src="{{ request_obj.image.url }}" class="img-fluid rounded shadow-sm" style="max-height: 200px;"
+                alt="Microscopy Slide">
+              <a href="{{ request_obj.image.url }}" target="_blank" class="btn btn-sm btn-outline-primary mt-2 w-100">
+                <i class="fa-solid fa-expand me-1"></i>View Full Size
+              </a>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
 
-<tr><th>Submitted</th><td>{{ request_obj.timestamp|date:"M d, Y H:i" }}</td></tr>
-</table>
+    <!-- Right Column: Lab Report Form -->
+    <div class="col-lg-8">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-primary text-white py-3">
+          <h5 class="card-title mb-0"><i class="fa-solid fa-flask me-2"></i>Lab Report Entry</h5>
+        </div>
+        <div class="card-body p-4">
+          <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
 
-</div>
-</div>
+            <!-- Admin Section -->
+            <h6 class="text-primary border-bottom pb-2 mb-3">Administrative Details</h6>
+            <div class="row g-3 mb-4">
+              <div class="col-md-6">
+                {{ form.rc_code|as_crispy_field }}
+              </div>
+              <div class="col-md-6">
+                {{ form.lab_id|as_crispy_field }}
+              </div>
+            </div>
 
-<!-- IMAGE -->
-<div class="card shadow-sm border-0 mt-3">
-<div class="card-header bg-success text-white p-2"><b>Microscopy Image</b></div>
-<div class="card-body text-center">
+            <!-- Quality Section -->
+            <h6 class="text-primary border-bottom pb-2 mb-3">Sample Quality Assessment</h6>
+            <div class="row g-3 mb-4">
+              <div class="col-md-6">
+                {{ form.quality|as_crispy_field }}
+              </div>
+              <div class="col-md-6">
+                {{ form.sample_suitability|as_crispy_field }}
+              </div>
+              <div class="col-12">
+                {{ form.suitability_reason|as_crispy_field }}
+              </div>
+            </div>
 
-{% if request_obj.image %}
-<img src="{{ request_obj.image.url }}"
-     class="img-fluid rounded border"
-     style="max-height:280px;cursor:zoom-in"
-     data-bs-toggle="modal"
-     data-bs-target="#imageModal">
-<p class="small text-muted mt-2">Click to zoom</p>
-{% else %}
-<div class="alert alert-warning">No image uploaded.</div>
-{% endif %}
+            <!-- Findings Section -->
+            <h6 class="text-primary border-bottom pb-2 mb-3">Microbiology Findings</h6>
+            <div class="mb-3">
+              {{ form.report_text|as_crispy_field }}
+            </div>
+            <div class="mb-4">
+              {{ form.comments|as_crispy_field }}
+            </div>
 
-</div>
-</div>
+            <!-- PDF Upload -->
+            <div class="alert alert-light border border-info border-start-4 mb-4">
+              <div class="d-flex">
+                <div class="me-3 text-info fs-4"><i class="fa-solid fa-file-pdf"></i></div>
+                <div>
+                  <h6 class="alert-heading fw-bold mb-1">Upload Official Report (Optional)</h6>
+                  <p class="mb-2 small text-muted">If you have a generated PDF from another system, upload it here.</p>
+                  {{ form.microbiology_pdf }}
+                </div>
+              </div>
+            </div>
 
-</div>
+            <!-- Authorization -->
+            <div class="bg-light p-3 rounded mb-4">
+              <div class="row align-items-center">
+                <div class="col-md-8">
+                  {{ form.auth_by|as_crispy_field }}
+                </div>
+                <div class="col-md-4 text-end">
+                  <small class="text-muted d-block">Date</small>
+                  <strong>{% now "Y-m-d" %}</strong>
+                </div>
+              </div>
+            </div>
 
-
-<!-- RIGHT COLUMN -->
-<div class="col-lg-5" style="position:sticky;top:90px;">
-
-<div class="card shadow-sm border-0">
-<div class="card-header bg-primary text-white p-2"><b>Lab Report</b></div>
-<div class="card-body">
-
-<form method="post" enctype="multipart/form-data" novalidate>
-{% csrf_token %}
-{{ form|crispy }}
-
-<div class="alert alert-light border-start border-4 mt-3" style="border-color:#0dcaf0">
-<i class="fa-solid fa-circle-check me-1"></i> Authorizing completes the case.
-</div>
-
-<div class="d-grid gap-2">
-<button class="btn btn-success btn-lg">
-Authorize & Complete
-</button>
-
-<a class="btn btn-outline-secondary" href="{% url 'lab_queue' %}">
-Back
-</a>
-</div>
-
-</form>
-
-</div>
-</div>
-
-</div>
-
-</div>
-
-
-<!-- IMAGE MODAL -->
-{% if request_obj.image %}
-<div class="modal fade" id="imageModal">
-  <div class="modal-dialog modal-xl modal-dialog-centered">
-  <div class="modal-content">
-  <div class="modal-header">
-    <h5>Microscopy Image</h5>
-    <button class="btn-close" data-bs-dismiss="modal"></button>
+            <div class="d-grid">
+              <button type="submit" class="btn btn-success py-2 fw-bold fs-5">
+                <i class="fa-solid fa-check-circle me-2"></i>Authorize & Complete Report
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
   </div>
-  <div class="modal-body text-center">
-    <img src="{{ request_obj.image.url }}" class="img-fluid">
-  </div>
-  </div>
-  </div>
 </div>
-{% endif %}
-
 {% endblock %}

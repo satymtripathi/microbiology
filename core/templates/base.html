@@ -1,51 +1,82 @@
 {% load static %}
 <!DOCTYPE html>
+{% load static %}
+<!DOCTYPE html>
 <html lang="en">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Microbiology Portal{% endblock %}</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body { background-color: #f7f9fc; }
-        .navbar-brand { font-weight: bold; color: #fff!important; }
-        .card { border-radius: 12px; box-shadow: 0 4px 8px rgba(0,0,0,0.05); }
-    </style>
-</head>
-<body>
-    <nav class="navbar navbar-expand-lg navbar-dark" style="background-color: #007BFF;">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="{% url 'dashboard' %}">🏥 Ocular Microbiology Portal</a>
-            <div class="collapse navbar-collapse">
-                <span class="navbar-text ms-auto">
-                    {% if user.is_authenticated %}
-                        Welcome, **{{ user.full_name }}** ({{ user.get_role_display }}) | 
-                        
-                        <a href="{% url 'logout' %}" class="btn btn-sm btn-outline-light ms-2">
-                            <i class="fas fa-sign-out-alt"></i> Logout
-                        </a>
-                        {% else %}
-                        <a href="{% url 'login' %}" class="btn btn-sm btn-light">Login</a>
-                    {% endif %}
-                </span>
-            </div>
+    <div class="container-fluid">
+        <a class="navbar-brand" href="{% url 'dashboard' %}">
+            <i class="fa-solid fa-microscope me-2"></i>MicroBio Portal
+        </a>
+        <div class="collapse navbar-collapse">
+            <span class="navbar-text ms-auto text-white">
+                {% if user.is_authenticated %}
+                <span class="me-3"><i class="fa-regular fa-user me-1"></i>{{ user.full_name }} <span
+                        class="badge bg-light text-primary ms-1">{{ user.get_role_display }}</span></span>
+
+                <a href="{% url 'logout' %}" class="btn btn-sm btn-outline-light border-0 bg-white bg-opacity-10">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+                {% else %}
+                <a href="{% url 'login' %}" class="btn btn-sm btn-light">Login</a>
+                {% endif %}
+            </span>
         </div>
+    </div>
     </nav>
     <div class="container mt-4">
         {% if messages %}
-            {% for message in messages %}
-                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            {% endfor %}
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm border-0" role="alert">
+            <i class="fa-solid fa-info-circle me-2"></i>{{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
         {% endif %}
-        
+
         {% block content %}
         {% endblock %}
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-</body>
+    <script>
+        // Auto-expand textareas
+        document.addEventListener('input', function (event) {
+            if (event.target.tagName.toLowerCase() !== 'textarea') return;
+            autoExpand(event.target);
+        });
+
+        function autoExpand(field) {
+            // Reset height to calculate scrollHeight correctly
+            field.style.height = 'inherit';
+
+            // Get the computed styles for the element
+            var computed = window.getComputedStyle(field);
+
+            // Calculate the height
+            var height = parseInt(computed.getPropertyValue('border-top-width'), 10)
+                + parseInt(computed.getPropertyValue('padding-top'), 10)
+                + field.scrollHeight
+                + parseInt(computed.getPropertyValue('padding-bottom'), 10)
+                + parseInt(computed.getPropertyValue('border-bottom-width'), 10);
+
+            field.style.height = height + 'px';
+        }
+
+        // Initialize all textareas
+        document.addEventListener('DOMContentLoaded', function () {
+            var textareas = document.getElementsByTagName('textarea');
+            for (var i = 0; i < textareas.length; i++) {
+                // Set initial small height if empty or short
+                if (!textareas[i].value || textareas[i].rows < 3) {
+                    // Let CSS or rows attribute handle it, but ensure auto-expand works on type
+                } else {
+                    autoExpand(textareas[i]);
+                }
+            }
+        });
+    </script>
+    </body>
+
 </html>

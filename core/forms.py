@@ -41,7 +41,7 @@ class DoctorRequestForm(forms.ModelForm):
             'sample': 'Sample Type *',
             'duration_value': 'Duration',
             'duration_unit': 'Unit *',
-            'on_meds': 'Prior Medications? *',
+            'on_meds': 'Prior Medications?',
             'meds_category': 'Medication Type',
             'meds_custom': 'Medication Name (for Others)',
             'impression': 'Clinical Impression',
@@ -85,15 +85,16 @@ class DoctorRequestForm(forms.ModelForm):
 # ==========================================
 # LAB FORM (Phase 4)
 # ==========================================
-# core/forms.py (Update LabReportForm)
-
-# ... (DoctorRequestForm definition)
-
 class LabReportForm(forms.ModelForm):
     class Meta:
         model = Report
         # request field is handled by the view, primary_key is implicit
-        exclude = ('request', 'pdf_uploaded_date') 
+        exclude = ('request', 'pdf_uploaded_date')
+        widgets = {
+            'report_text': forms.Textarea(attrs={'rows': 2, 'class': 'form-control'}),
+            'comments': forms.Textarea(attrs={'rows': 2, 'class': 'form-control'}),
+            'suitability_reason': forms.Textarea(attrs={'rows': 2, 'class': 'form-control'}),
+        }
         
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
