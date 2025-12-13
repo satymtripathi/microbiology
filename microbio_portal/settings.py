@@ -23,14 +23,21 @@ SECRET_KEY = os.environ.get(
 
 DEBUG = os.environ.get("DJANGO_DEBUG", "False") == "True"
 
-ALLOWED_HOSTS = os.environ.get(
-    "DJANGO_ALLOWED_HOSTS",
-    ""
-).split(",")
+DEBUG = False
+
+ALLOWED_HOSTS = [
+    "microbiology-v3.onrender.com",
+    "127.0.0.1",
+    "localhost",
+]
 
 CSRF_TRUSTED_ORIGINS = [
-    "https://microbiology-v3.onrender.com"
+    "https://microbiology-v3.onrender.com",
 ]
+
+USE_X_FORWARDED_HOST = True
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
 
 
 # -------------------------------------------------
